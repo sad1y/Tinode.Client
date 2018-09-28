@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <RootNamespace>Tinode.Client</RootNamespace>
+    <LangVersion>7.2</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.6.1" />
+    <PackageReference Include="Grpc" Version="1.15.0" />
+    <PackageReference Include="Grpc.Tools" Version="1.15.0" />
+    <PackageReference Include="Utf8Json" Version="1.3.7" />
+  </ItemGroup>
+</Project>
