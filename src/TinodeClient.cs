@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -119,7 +120,7 @@ namespace Tinode.Client
             rcvMsg.Ctrl.Params.TryGetValue("authlvl", out var authlvl);
             rcvMsg.Ctrl.Params.TryGetValue("token", out var token);
             rcvMsg.Ctrl.Params.TryGetValue("expires", out var expires);
-            
+
             return new LoginResponse(authlvl?.ToStringUtf8(), user?.ToStringUtf8(), token?.ToStringUtf8(), expires?.ToStringUtf8());
         }
 
@@ -156,6 +157,32 @@ namespace Tinode.Client
             return new CreateAccountResponse(desc?.ToStringUtf8(), user?.ToStringUtf8(), token?.ToStringUtf8(), expires?.ToStringUtf8());
         }
 
+        public async Task<CreateTopicResponse> CreateTopicAsync(string name, string[] tags = null, bool allowAnon = false)
+        {
+            if (string.IsNullOrEmpty(name)) throw new ArgumentException("Value cannot be null or empty.", nameof(name));
+
+            var message = new ClientMsg
+            {
+                Sub = new ClientSub
+                {
+                    Id = GenerateMessageId(),
+                    Topic = "new",
+                    SetQuery = new SetQuery()
+                }
+            };
+
+            if (tags?.Any() == true)
+                message.Sub.SetQuery.Tags.AddRange(tags);
+
+            message.Sub.SetQuery.Tags.Add("name:" + name);
+
+            var rcvMsg = await SendMessageAsync(message, message.Sub.Id);
+
+            var topicId = rcvMsg.Ctrl.Topic;
+
+            return new CreateTopicResponse(topicId);
+        }
+        
         private Task SendMessageAsync(ClientMsg msg) => _loop.RequestStream.WriteAsync(msg);
 
         private Task<ServerMsg> SendMessageAsync(ClientMsg message, string operationId)

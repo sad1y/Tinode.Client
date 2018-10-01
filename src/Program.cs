@@ -16,9 +16,9 @@ namespace Tinode.Client
                 Console.WriteLine("connected successfully!");
                 Console.WriteLine($"ver: {connectResponse.Version}, build: {connectResponse.Build}");
 
-                var createAccountResponse = await client.CreateAccountAsync("zoth3", "qwerty");
-                
-                var loginResponse = await client.LoginAsync("zoth1", "qwerty1");
+                var loginResponse = await client.LoginAsync("zoth1", "qwerty");
+
+                var createTopicResponse = await client.CreateTopicAsync("zoth_topic");
             }
         }
     }
