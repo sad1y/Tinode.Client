@@ -25,7 +25,7 @@ namespace Tinode.Client
         private static readonly object Sync = new object();
         private AsyncDuplexStreamingCall<ClientMsg, ServerMsg> _loop;
 
-        private event Action<ServerMsg> OnServerResponse;
+        public event Action<ServerMsg> OnServerResponse;
 
         public TinodeClient(string serverAddress)
         {
@@ -71,6 +71,9 @@ namespace Tinode.Client
                         {
                             action(msg);
                         }
+
+                        var onOnServerResponse = OnServerResponse;
+                        onOnServerResponse?.Invoke(msg);
                     }
                 }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
@@ -182,8 +185,34 @@ namespace Tinode.Client
 
             return new CreateTopicResponse(topicId);
         }
-        
-        private Task SendMessageAsync(ClientMsg msg) => _loop.RequestStream.WriteAsync(msg);
+
+        public async Task<TopicSub> GetTopicsAsync()
+        {
+            var message = new ClientMsg
+            {
+                Sub = new ClientSub
+                {
+                    Id = GenerateMessageId(),
+                    Topic = "me",
+                    GetQuery = new GetQuery
+                    {
+                        What = "sub desc",
+                    }
+                }
+            };
+
+            // {sub: {id: "70033", topic: "me", get: {what: "sub desc"}}}
+
+            var response = await SendMessageAsync(message, message.Sub.Id);
+
+            return new TopicSub();
+        }
+
+        private Task SendMessageAsync(ClientMsg msg)
+        {
+            Console.WriteLine(msg);
+            return _loop.RequestStream.WriteAsync(msg);
+        }
 
         private Task<ServerMsg> SendMessageAsync(ClientMsg message, string operationId)
         {
