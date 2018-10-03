@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Grpc.Core;
 using Tinode.Client.Exceptions;
 using Tinode.Client.Response;
 using Pbx;
+using Tinode.Client.Extensions;
 
 namespace Tinode.Client
 {
@@ -23,8 +25,9 @@ namespace Tinode.Client
 
         private static readonly object Sync = new object();
         private AsyncDuplexStreamingCall<ClientMsg, ServerMsg> _loop;
+        private bool _isSubscribedToMe;
 
-        private event Action<ServerMsg> OnServerResponse;
+        public event Action<ServerMsg> OnServerResponse;
 
         public TinodeClient(string serverAddress)
         {
@@ -32,7 +35,6 @@ namespace Tinode.Client
 
             _serverAddress = serverAddress;
             _cmdId = Environment.TickCount;
-            OnServerResponse = msg => { }; // eliminate null validation
         }
 
         public void Disconnect()
@@ -51,7 +53,7 @@ namespace Tinode.Client
             lock (Sync)
             {
                 _cts?.Cancel();
-                _cts = new CancellationTokenSource(30_000);
+                _cts = new CancellationTokenSource();
                 token = _cts.Token;
 
                 var channel = new Channel(_serverAddress, ChannelCredentials.Insecure);
@@ -62,16 +64,22 @@ namespace Tinode.Client
             Task.Factory.StartNew(
                 async () =>
                 {
-                    while (await _loop.ResponseStream.MoveNext(CancellationToken.None))
+                    while (!token.IsCancellationRequested)
                     {
+                        var hasNewMsg = await _loop.ResponseStream.MoveNext(CancellationToken.None);
+                        if (!hasNewMsg) break;
+
                         var msg = _loop.ResponseStream.Current;
 
-                        if (_internalSubscriber.TryGetValue(msg.Ctrl.Id, out var action))
+                        if (_internalSubscriber.TryGetValue(msg.GetId(), out var action))
                         {
                             action(msg);
                         }
+
+                        var onOnServerResponse = OnServerResponse;
+                        onOnServerResponse?.Invoke(msg);
                     }
-                }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                }, TaskCreationOptions.LongRunning);
 
             return SayHi();
         }
@@ -86,10 +94,10 @@ namespace Tinode.Client
                 Hi = new ClientHi
                 {
                     Id = id,
-                    Ver = "0.15",
+                    Ver = "0.15.6-rc5",
                     Lang = "EN",
                     DeviceId = id,
-                    UserAgent = "dotnet-core-client"
+                    UserAgent = "tinode-dotnet-core-client"
                 }
             };
 
@@ -119,7 +127,9 @@ namespace Tinode.Client
             rcvMsg.Ctrl.Params.TryGetValue("authlvl", out var authlvl);
             rcvMsg.Ctrl.Params.TryGetValue("token", out var token);
             rcvMsg.Ctrl.Params.TryGetValue("expires", out var expires);
-            
+
+            await SubscribeToMeTopicAsync();
+
             return new LoginResponse(authlvl?.ToStringUtf8(), user?.ToStringUtf8(), token?.ToStringUtf8(), expires?.ToStringUtf8());
         }
 
@@ -156,6 +166,73 @@ namespace Tinode.Client
             return new CreateAccountResponse(desc?.ToStringUtf8(), user?.ToStringUtf8(), token?.ToStringUtf8(), expires?.ToStringUtf8());
         }
 
+        public async Task<CreateTopicResponse> CreateTopicAsync(string name, string[] tags = null, bool allowAnon = false)
+        {
+            if (string.IsNullOrEmpty(name)) throw new ArgumentException("Value cannot be null or empty.", nameof(name));
+
+            var message = new ClientMsg
+            {
+                Sub = new ClientSub
+                {
+                    Id = GenerateMessageId(),
+                    Topic = "new",
+                    SetQuery = new SetQuery()
+                }
+            };
+
+            if (tags?.Any() == true)
+                message.Sub.SetQuery.Tags.AddRange(tags);
+
+            message.Sub.SetQuery.Tags.Add("name:" + name);
+
+            var rcvMsg = await SendMessageAsync(message, message.Sub.Id);
+
+            var topicId = rcvMsg.Ctrl.Topic;
+
+            return new CreateTopicResponse(topicId);
+        }
+
+        public Task SubsribeAsync(string topicName)
+        {
+            var message = new ClientMsg
+            {
+                Sub = new ClientSub
+                {
+                    Id = GenerateMessageId(),
+                    Topic = topicName,
+                }
+            };
+
+            return SendMessageAsync(message, message.Sub.Id);
+        }
+
+        public Task SubscribeToMeTopicAsync()
+        {
+            return _isSubscribedToMe
+                ? Task.CompletedTask
+                : SubsribeAsync("me").ContinueWith(task => { _isSubscribedToMe = true; }, TaskContinuationOptions.OnlyOnRanToCompletion);
+        }
+
+        public async Task<IEnumerable<TopicSubscribtion>> GetTopicsAsync()
+        {
+            var message = new ClientMsg
+            {
+                Get = new ClientGet
+                {
+                    Id = GenerateMessageId(),
+                    Topic = "me",
+                    Query = new GetQuery
+                    {
+                        What = "sub"
+                    }
+                }
+            };
+
+            var rcvMessages = await SendMessageAsync(message, message.Get.Id);
+
+            return rcvMessages.Meta.Sub.Select(TopicSubscribtion.FromTopicSub);
+        }
+
         private Task SendMessageAsync(ClientMsg msg) => _loop.RequestStream.WriteAsync(msg);
 
         private Task<ServerMsg> SendMessageAsync(ClientMsg message, string operationId)
@@ -177,13 +254,14 @@ namespace Tinode.Client
 
             void ServerAnswerHandler(ServerMsg answer)
             {
-                if (answer.Ctrl.Code < 400)
+                var answerCode = answer.GetCode();
+                if (answerCode < 400)
                 {
                     tsc.TrySetResult(answer);
                     return;
                 }
 
-                switch (answer.Ctrl.Code)
+                switch (answerCode)
                 {
                     case 401:
                     {
@@ -200,7 +278,13 @@ namespace Tinode.Client
 
             SendMessageAsync(message).ContinueWith(task =>
             {
-                if (task.IsCompletedSuccessfully) return;
+                if (task.IsCompletedSuccessfully)
+                {
+#if DEBUG
+                    Console.WriteLine(message);
+#endif
+                    return;
+                }
 
                 _internalSubscriber.TryRemove(operationId, out _);
 
@@ -217,7 +301,7 @@ namespace Tinode.Client
         {
             Disconnect();
             var loop = _loop;
-            loop.RequestStream.CompleteAsync();
+            loop.RequestStream.CompleteAsync().ContinueWith(task => loop.Dispose());
         }
     }
 }
