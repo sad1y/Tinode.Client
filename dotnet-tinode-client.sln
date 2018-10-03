@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tinode.Client", "src\Tinode.Client.csproj", "{0AFB5E85-FD71-474F-9E03-796C883BF55E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tinode.Client", "src\Tinode.Client\Tinode.Client.csproj", "{83440045-58CF-4997-ACEC-D2BFCF4E3FD8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tinode.Client.Example", "src\Tinode.Client.Example\Tinode.Client.Example.csproj", "{3C808488-9BE1-4618-BC47-788A15C76B67}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +10,13 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0AFB5E85-FD71-474F-9E03-796C883BF55E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0AFB5E85-FD71-474F-9E03-796C883BF55E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0AFB5E85-FD71-474F-9E03-796C883BF55E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0AFB5E85-FD71-474F-9E03-796C883BF55E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83440045-58CF-4997-ACEC-D2BFCF4E3FD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83440045-58CF-4997-ACEC-D2BFCF4E3FD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83440045-58CF-4997-ACEC-D2BFCF4E3FD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83440045-58CF-4997-ACEC-D2BFCF4E3FD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C808488-9BE1-4618-BC47-788A15C76B67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C808488-9BE1-4618-BC47-788A15C76B67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C808488-9BE1-4618-BC47-788A15C76B67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C808488-9BE1-4618-BC47-788A15C76B67}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
