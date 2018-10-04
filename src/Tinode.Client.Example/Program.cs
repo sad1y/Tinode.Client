@@ -10,21 +10,30 @@ namespace Tinode.Client.Example
         {
             var client = new TinodeClient("127.0.0.1:6061");
             {
-                // client.OnServerResponse += Console.WriteLine;
+                client.OnServerResponse += Console.WriteLine;
 
                 var connectResponse = await client.ConnectAsync();
                 Console.WriteLine("connected successfully!");
                 Console.WriteLine($"ver: {connectResponse.Version}, build: {connectResponse.Build}");
 
-                await client.LoginAsync("alice", "alice123");
+                var loginResult = await client.LoginAsync("zoth", "qwerty1");
+                // var loginResult = await client.LoginAsync("alice", "alice123");
+                Console.WriteLine("logged as {0}", loginResult.User);
 
-                // var createTopicResponse = await client.CreateTopicAsync("zoth_topic");
+//                var createTopicResponse = await client.CreateTopicAsync("zoth_topic");
+//                
                 var topics = await client.GetTopicsAsync();
-
                 foreach (var topic in topics)
                 {
                     Console.WriteLine("[{1}] [{3}] {0}, {2}", topic.Topic, topic.Online, topic.Public.FormattedName, topic.Acs);
                 }
+
+                // topic: "grpZwqX8J9Y1a8"
+                // alice: "usrCXKp4ZUszEk"
+                // zoth: "usr18E4Fe82wrw"
+
+                await client.InviteUserAsync("grpZwqX8J9Y1a8", "usrCXKp4ZUszEk",
+                    AccessPermission.Join | AccessPermission.Read | AccessPermission.Write | AccessPermission.Sharing);
             }
 
 //            await Test("alice", "alice123");

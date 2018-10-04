@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Google.Protobuf;
 using Grpc.Core;
 using Tinode.Client.Exceptions;
-using Tinode.Client.Response;
 using Pbx;
 using Tinode.Client.Extensions;
 
@@ -23,11 +22,14 @@ namespace Tinode.Client
         private readonly ConcurrentDictionary<string, Action<ServerMsg>>
             _internalSubscriber = new ConcurrentDictionary<string, Action<ServerMsg>>();
 
-        private static readonly object Sync = new object();
+        private readonly ConcurrentBag<string> _topicSubscribtions = new ConcurrentBag<string>();
+        private readonly object _sync = new object();
         private AsyncDuplexStreamingCall<ClientMsg, ServerMsg> _loop;
         private bool _isSubscribedToMe;
 
+
         public event Action<ServerMsg> OnServerResponse;
+
 
         public TinodeClient(string serverAddress)
         {
@@ -39,7 +41,7 @@ namespace Tinode.Client
 
         public void Disconnect()
         {
-            lock (Sync)
+            lock (_sync)
             {
                 _cts?.Cancel();
                 _cts = null;
@@ -50,7 +52,7 @@ namespace Tinode.Client
         {
             CancellationToken token;
 
-            lock (Sync)
+            lock (_sync)
             {
                 _cts?.Cancel();
                 _cts = new CancellationTokenSource();
@@ -170,20 +172,32 @@ namespace Tinode.Client
         {
             if (string.IsNullOrEmpty(name)) throw new ArgumentException("Value cannot be null or empty.", nameof(name));
 
+            var vCardData = (new VCard
+            {
+                FormattedName = name
+            }).AsJson();
+
             var message = new ClientMsg
             {
                 Sub = new ClientSub
                 {
                     Id = GenerateMessageId(),
                     Topic = "new",
-                    SetQuery = new SetQuery()
+                    SetQuery = new SetQuery
+                    {
+                        Desc = new SetDesc
+                        {
+                            Public = ByteString.CopyFrom(vCardData)
+                        }
+                    }
                 }
             };
 
             if (tags?.Any() == true)
                 message.Sub.SetQuery.Tags.AddRange(tags);
 
-            message.Sub.SetQuery.Tags.Add("name:" + name);
+//            message.Sub.SetQuery.Tags.Add("name:" + name);
+
 
             var rcvMsg = await SendMessageAsync(message, message.Sub.Id);
 
@@ -192,8 +206,11 @@ namespace Tinode.Client
             return new CreateTopicResponse(topicId);
         }
 
-        public Task SubsribeAsync(string topicName)
+        public Task SubscribeAsync(string topicName)
         {
+            if (_topicSubscribtions.TryPeek(out var topic) && topicName == topic)
+                return Task.CompletedTask;
+
             var message = new ClientMsg
             {
                 Sub = new ClientSub
@@ -203,15 +220,11 @@ namespace Tinode.Client
                 }
             };
 
-            return SendMessageAsync(message, message.Sub.Id);
+            return SendMessageAsync(message, message.Sub.Id)
+                .ContinueWith(task => { _topicSubscribtions.Add(topicName); }, TaskContinuationOptions.OnlyOnRanToCompletion);
         }
 
-        public Task SubscribeToMeTopicAsync()
-        {
-            return _isSubscribedToMe
-                ? Task.CompletedTask
-                : SubsribeAsync("me").ContinueWith(task => { _isSubscribedToMe = true; }, TaskContinuationOptions.OnlyOnRanToCompletion);
-        }
+        public Task SubscribeToMeTopicAsync() => SubscribeAsync("me");
 
         public async Task<IEnumerable<TopicSubscribtion>> GetTopicsAsync()
         {
@@ -230,7 +243,31 @@ namespace Tinode.Client
 
             var rcvMessages = await SendMessageAsync(message, message.Get.Id);
 
-            return rcvMessages.Meta.Sub.Select(TopicSubscribtion.FromTopicSub);
+            return rcvMessages.Meta == null ? Enumerable.Empty<TopicSubscribtion>() : rcvMessages.Meta.Sub.Select(TopicSubscribtion.FromTopicSub);
+        }
+
+        public async Task InviteUserAsync(string topic, string user, AccessPermission acs)
+        {
+            await SubscribeAsync(topic);
+            
+            var message = new ClientMsg
+            {
+                Set = new ClientSet
+                {
+                    Id = GenerateMessageId(),
+                    Topic = topic,
+                    Query = new SetQuery
+                    {
+                        Sub = new SetSub
+                        {
+                            UserId = user,
+                            Mode = acs.AsString()
+                        }
+                    }
+                }
+            };
+
+            await SendMessageAsync(message, message.Set.Id);
         }
 
         private Task SendMessageAsync(ClientMsg msg) => _loop.RequestStream.WriteAsync(msg);

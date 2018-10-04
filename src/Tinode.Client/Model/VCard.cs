@@ -17,9 +17,14 @@ namespace Tinode.Client
 
         public static VCard FromByteString(ByteString byteString)
         {
-            var a = JsonSerializer.Deserialize<VCard>(byteString.ToStringUtf8());
-            return a;
+            if (byteString.Length == 0)
+                return new VCard();
+
+            var json = byteString.ToStringUtf8();
+            return JsonSerializer.Deserialize<VCard>(json);
         }
+
+        public byte[] AsJson() => JsonSerializer.Serialize(this);
     }
 
     public class VCardUserData
