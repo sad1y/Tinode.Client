@@ -246,8 +246,13 @@ namespace Tinode.Client
             return rcvMessages.Meta == null ? Enumerable.Empty<TopicSubscribtion>() : rcvMessages.Meta.Sub.Select(TopicSubscribtion.FromTopicSub);
         }
 
-        public async Task InviteUserAsync(string topic, string user, AccessPermission acs)
+        public Task InviteUserAsync(string topic, string user, AccessPermission acs) => SetUserPermissionAsync(topic, user, acs); 
+
+        public async Task SetUserPermissionAsync(string topic, string user, AccessPermission acs)
         {
+            if (string.IsNullOrEmpty(topic)) throw new ArgumentException("Value cannot be null or empty.", nameof(topic));
+            if (string.IsNullOrEmpty(user)) throw new ArgumentException("Value cannot be null or empty.", nameof(user));
+
             await SubscribeAsync(topic);
             
             var message = new ClientMsg
@@ -268,6 +273,25 @@ namespace Tinode.Client
             };
 
             await SendMessageAsync(message, message.Set.Id);
+        }
+
+        public async Task LeaveAsync(string topic, bool unsub = false)
+        {
+            if (string.IsNullOrWhiteSpace(topic)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(topic));
+
+            await SubscribeAsync(topic);
+            
+            var message = new ClientMsg
+            {
+                Leave = new ClientLeave
+                {
+                    Id = GenerateMessageId(),
+                    Topic = topic,
+                    Unsub = unsub
+                }
+            };
+            
+            await SendMessageAsync(message, message.Leave.Id);
         }
 
         private Task SendMessageAsync(ClientMsg msg) => _loop.RequestStream.WriteAsync(msg);
