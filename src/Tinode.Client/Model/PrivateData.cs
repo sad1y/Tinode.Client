@@ -11,7 +11,11 @@ namespace Tinode.Client
 
         public static PrivateData FromByteString(ByteString byteString)
         {
-            return JsonSerializer.Deserialize<PrivateData>(byteString.ToStringUtf8());
+            if (byteString.Length == 0)
+                return new PrivateData();
+
+            var json = byteString.ToStringUtf8();
+            return JsonSerializer.Deserialize<PrivateData>(json);
         }
     }
 }

@@ -1,4 +1,4 @@
-namespace Tinode.Client.Response
+namespace Tinode.Client
 {
     public class LoginResponse
     {

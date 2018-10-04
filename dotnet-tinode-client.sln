@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tinode.Client", "src\Tinode
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tinode.Client.Example", "src\Tinode.Client.Example\Tinode.Client.Example.csproj", "{3C808488-9BE1-4618-BC47-788A15C76B67}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tinode.Client.Tests", "src\Tinode.Client.Tests\Tinode.Client.Tests.csproj", "{CE59786F-EE3C-47E1-86ED-98EA5144AD39}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{3C808488-9BE1-4618-BC47-788A15C76B67}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C808488-9BE1-4618-BC47-788A15C76B67}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C808488-9BE1-4618-BC47-788A15C76B67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE59786F-EE3C-47E1-86ED-98EA5144AD39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE59786F-EE3C-47E1-86ED-98EA5144AD39}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE59786F-EE3C-47E1-86ED-98EA5144AD39}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE59786F-EE3C-47E1-86ED-98EA5144AD39}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

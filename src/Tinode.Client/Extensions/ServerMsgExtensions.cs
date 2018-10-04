@@ -11,6 +11,7 @@ namespace Tinode.Client.Extensions
             {
                 case ServerMsg.MessageOneofCase.Ctrl: return msg.Ctrl.Id;
                 case ServerMsg.MessageOneofCase.Meta: return msg.Meta.Id;
+                case ServerMsg.MessageOneofCase.Pres: return string.Empty;
                 default:
                     throw new NotSupportedException("cannot get message id of type " + msg.MessageCase);
             }
