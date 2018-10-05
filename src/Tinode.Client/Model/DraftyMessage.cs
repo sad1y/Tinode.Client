@@ -14,6 +14,11 @@ namespace Tinode.Client
         {
             _sb = new StringBuilder();
         }
+        
+        public DraftyMessage(string text)
+        {
+            _sb = new StringBuilder(text);
+        }
 
         public DraftyMessage Bold(string text)
         {
@@ -91,12 +96,14 @@ namespace Tinode.Client
         public DraftyMessage NextLine(int position)
         {
             if (position > _sb.Length || position < 0) throw new ArgumentOutOfRangeException(nameof(position));
-            _inlineFormat.Add(new InlineFormat {Key = -1, Len = 1, At = position, Decoration = TextDecoration.None});
+            _inlineFormat.Add(new InlineFormat {Key = -1, Len = 1, At = position, Decoration = TextDecoration.LineBreak});
             return this;
         }
 
         public DraftyMessage Link(string text, string uri)
         {
+            if (string.IsNullOrEmpty(text)) throw new ArgumentException("Value cannot be null or empty.", nameof(text));
+            if (string.IsNullOrEmpty(uri)) throw new ArgumentException("Value cannot be null or empty.", nameof(uri));
             _entities.Add(new LinkEntity {Data = uri});
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = text.Length, Decoration = TextDecoration.None});
             _sb.Append(text);
@@ -107,8 +114,8 @@ namespace Tinode.Client
         {
             if (string.IsNullOrEmpty(url)) throw new ArgumentException("Value cannot be null or empty.", nameof(url));
             if (string.IsNullOrEmpty(mime)) throw new ArgumentException("Value cannot be null or empty.", nameof(mime));
-            if (width < 1) throw new ArgumentException("Value should be greater that 0.", nameof(width));
-            if (height < 1) throw new ArgumentException("Value should be greater that 0.", nameof(height));
+            if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
+            if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
 
             _entities.Add(new ImageEntity {Ref = url, Mime = mime, Width = width, Height = height, Name = name, Size = size});
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = 1, Decoration = TextDecoration.None});
@@ -119,8 +126,8 @@ namespace Tinode.Client
         {
             if (string.IsNullOrEmpty(data)) throw new ArgumentException("Value cannot be null or empty.", nameof(data));
             if (string.IsNullOrEmpty(mime)) throw new ArgumentException("Value cannot be null or empty.", nameof(mime));
-            if (width < 1) throw new ArgumentException("Value should be greater that 0.", nameof(width));
-            if (height < 1) throw new ArgumentException("Value should be greater that 0.", nameof(height));
+            if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
+            if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
 
             _entities.Add(new ImageEntity {Val = data, Mime = mime, Width = width, Height = height, Name = name, Size = size});
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = 1, Decoration = TextDecoration.None});
@@ -137,7 +144,7 @@ namespace Tinode.Client
             return this;
         }
 
-        public DraftyMessage AttachBlob(string data, string mime, int width, int height, string name = null, int size = -1)
+        public DraftyMessage AttachBlob(string data, string mime, string name = null, int size = -1)
         {
             if (string.IsNullOrEmpty(data)) throw new ArgumentException("Value cannot be null or empty.", nameof(data));
             if (string.IsNullOrEmpty(mime)) throw new ArgumentException("Value cannot be null or empty.", nameof(mime));
@@ -150,6 +157,8 @@ namespace Tinode.Client
         public DraftyMessage Mention(string text)
         {
             if (string.IsNullOrEmpty(text)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(text));
+            
+            // TODO: check spec symbol
 
             _entities.Add(new MentionEntity {Data = text});
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = text.Length + 1, Decoration = TextDecoration.None});
@@ -164,6 +173,8 @@ namespace Tinode.Client
         {
             if (string.IsNullOrEmpty(text)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(text));
 
+            // TODO: check spec symbol
+            
             _entities.Add(new HashTagEntity {Data = text});
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = text.Length + 1, Decoration = TextDecoration.None});
 
