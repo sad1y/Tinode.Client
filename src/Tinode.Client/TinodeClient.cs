@@ -196,8 +196,47 @@ namespace Tinode.Client
             if (tags?.Any() == true)
                 message.Sub.SetQuery.Tags.AddRange(tags);
 
-//            message.Sub.SetQuery.Tags.Add("name:" + name);
+            var rcvMsg = await SendMessageAsync(message, message.Sub.Id);
 
+            var topicId = rcvMsg.Ctrl.Topic;
+
+            return new CreateTopicResponse(topicId);
+        }
+
+        public async Task PublishContentAsync(string topic, DraftyMessage msg)
+        {
+            var message = new ClientMsg
+            {
+                Pub = new ClientPub
+                {
+                    Id = GenerateMessageId(),
+                    Topic = topic,
+                    Head = { },
+                    Content = null // message.AsByteString()
+                }
+            };
+
+            var rcvMsg = await SendMessageAsync(message, message.Sub.Id);
+
+            // return new CreateTopicResponse(topicId);
+        }
+
+        public async Task<CreateTopicResponse> CreatePerToPerTopicAsync(string user, string[] tags = null)
+        {
+            if (string.IsNullOrEmpty(user)) throw new ArgumentException("Value cannot be null or empty.", nameof(user));
+
+            var message = new ClientMsg
+            {
+                Sub = new ClientSub
+                {
+                    Id = GenerateMessageId(),
+                    Topic = user,
+                    SetQuery = new SetQuery()
+                }
+            };
+
+            if (tags?.Any() == true)
+                message.Sub.SetQuery.Tags.AddRange(tags);
 
             var rcvMsg = await SendMessageAsync(message, message.Sub.Id);
 
@@ -246,7 +285,7 @@ namespace Tinode.Client
             return rcvMessages.Meta == null ? Enumerable.Empty<TopicSubscribtion>() : rcvMessages.Meta.Sub.Select(TopicSubscribtion.FromTopicSub);
         }
 
-        public Task InviteUserAsync(string topic, string user, AccessPermission acs) => SetUserPermissionAsync(topic, user, acs); 
+        public Task InviteUserAsync(string topic, string user, AccessPermission acs) => SetUserPermissionAsync(topic, user, acs);
 
         public async Task SetUserPermissionAsync(string topic, string user, AccessPermission acs)
         {
@@ -254,7 +293,7 @@ namespace Tinode.Client
             if (string.IsNullOrEmpty(user)) throw new ArgumentException("Value cannot be null or empty.", nameof(user));
 
             await SubscribeAsync(topic);
-            
+
             var message = new ClientMsg
             {
                 Set = new ClientSet
@@ -280,7 +319,7 @@ namespace Tinode.Client
             if (string.IsNullOrWhiteSpace(topic)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(topic));
 
             await SubscribeAsync(topic);
-            
+
             var message = new ClientMsg
             {
                 Leave = new ClientLeave
@@ -290,7 +329,7 @@ namespace Tinode.Client
                     Unsub = unsub
                 }
             };
-            
+
             await SendMessageAsync(message, message.Leave.Id);
         }
 
