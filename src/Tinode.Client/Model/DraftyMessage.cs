@@ -1,6 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Text;
+using Utf8Json;
+using Utf8Json.Internal;
+using Utf8Json.Resolvers;
 
 namespace Tinode.Client
 {
@@ -9,15 +14,44 @@ namespace Tinode.Client
         private readonly StringBuilder _sb;
         private readonly List<InlineFormat> _inlineFormat = new List<InlineFormat>();
         private readonly List<IDraftyEntity> _entities = new List<IDraftyEntity>();
+        private static readonly IJsonFormatterResolver JsonFormatter;
+
+        public IEnumerable<InlineFormat> GetInlineFormats() => _inlineFormat;
+
+        public IEnumerable<IDraftyEntity> GetEntities() => _entities;
+
+        public string UnformattedText => _sb.ToString();
+
+        static DraftyMessage()
+        {
+            JsonFormatter = CompositeResolver.Create(
+                new DraftyMessageFormatter(),
+                new InlineFormatFormatter(),
+                new LinkEntityFormatter(),
+                new BlobEntityFormatter(),
+                new ImageEntityFormatter(),
+                new HashtagEntityFormatter(),
+                new MentionEntityFormatter());
+        }
+
+        public static DraftyMessage Create() => new DraftyMessage();
+
+        public static DraftyMessage Create(string text) => new DraftyMessage(text);
 
         public DraftyMessage()
         {
             _sb = new StringBuilder();
         }
-        
+
         public DraftyMessage(string text)
         {
             _sb = new StringBuilder(text);
+        }
+
+        public DraftyMessage Text(string text)
+        {
+            _sb.Append(text);
+            return this;
         }
 
         public DraftyMessage Bold(string text)
@@ -104,8 +138,8 @@ namespace Tinode.Client
         {
             if (string.IsNullOrEmpty(text)) throw new ArgumentException("Value cannot be null or empty.", nameof(text));
             if (string.IsNullOrEmpty(uri)) throw new ArgumentException("Value cannot be null or empty.", nameof(uri));
-            _entities.Add(new LinkEntity {Data = uri});
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = text.Length, Decoration = TextDecoration.None});
+            _entities.Add(new LinkEntity {Data = uri});
             _sb.Append(text);
             return this;
         }
@@ -117,8 +151,11 @@ namespace Tinode.Client
             if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
             if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
 
-            _entities.Add(new ImageEntity {Ref = url, Mime = mime, Width = width, Height = height, Name = name, Size = size});
+            if (_sb.Length == 0)
+                _sb.Append(" ");
+
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = 1, Decoration = TextDecoration.None});
+            _entities.Add(new ImageEntity {Ref = url, Mime = mime, Width = width, Height = height, Name = name, Size = size});
             return this;
         }
 
@@ -129,41 +166,42 @@ namespace Tinode.Client
             if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
             if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
 
-            _entities.Add(new ImageEntity {Val = data, Mime = mime, Width = width, Height = height, Name = name, Size = size});
+            if (_sb.Length == 0)
+                _sb.Append(" ");
+
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = 1, Decoration = TextDecoration.None});
+            _entities.Add(new ImageEntity {Val = data, Mime = mime, Width = width, Height = height, Name = name, Size = size});
             return this;
         }
 
-        public DraftyMessage AttachRef(string url, string mime, string name = null, int size = -1)
+        public DraftyMessage BlobRef(string url, string mime, string name = null, int size = -1)
         {
             if (string.IsNullOrEmpty(url)) throw new ArgumentException("Value cannot be null or empty.", nameof(url));
             if (string.IsNullOrEmpty(mime)) throw new ArgumentException("Value cannot be null or empty.", nameof(mime));
 
-            _entities.Add(new AttachEntity {Ref = url, Mime = mime, Name = name, Size = size});
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = -1, Len = 0, Decoration = TextDecoration.None});
+            _entities.Add(new BlobEntity {Ref = url, Mime = mime, Name = name, Size = size});
             return this;
         }
 
-        public DraftyMessage AttachBlob(string data, string mime, string name = null, int size = -1)
+        public DraftyMessage Blob(string data, string mime, string name = null, int size = -1)
         {
             if (string.IsNullOrEmpty(data)) throw new ArgumentException("Value cannot be null or empty.", nameof(data));
             if (string.IsNullOrEmpty(mime)) throw new ArgumentException("Value cannot be null or empty.", nameof(mime));
 
-            _entities.Add(new AttachEntity {Val = data, Mime = mime, Name = name, Size = size});
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = -1, Len = 0, Decoration = TextDecoration.None});
+            _entities.Add(new BlobEntity {Val = data, Mime = mime, Name = name, Size = size});
+
             return this;
         }
 
         public DraftyMessage Mention(string text)
         {
             if (string.IsNullOrEmpty(text)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(text));
-            
-            // TODO: check spec symbol
 
+            _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = text.Length, Decoration = TextDecoration.None});
             _entities.Add(new MentionEntity {Data = text});
-            _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = text.Length + 1, Decoration = TextDecoration.None});
 
-            _sb.Append('@');
             _sb.Append(text);
 
             return this;
@@ -173,18 +211,19 @@ namespace Tinode.Client
         {
             if (string.IsNullOrEmpty(text)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(text));
 
-            // TODO: check spec symbol
-            
+            _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = text.Length, Decoration = TextDecoration.None});
             _entities.Add(new HashTagEntity {Data = text});
-            _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = text.Length + 1, Decoration = TextDecoration.None});
 
-            _sb.Append('#');
             _sb.Append(text);
 
             return this;
         }
 
-        private struct InlineFormat
+        public byte[] ToJsonBytes() => JsonSerializer.Serialize(this, JsonFormatter);
+
+        public string ToJsonString() => Encoding.UTF8.GetString(ToJsonBytes());
+
+        public struct InlineFormat
         {
             public int At;
             public int Len;
@@ -192,14 +231,13 @@ namespace Tinode.Client
             public int Key;
         }
 
-
-        private class LinkEntity : IDraftyEntity
+        public class LinkEntity : IDraftyEntity
         {
             public string Type => "LN";
             public string Data;
         }
 
-        private class ImageEntity : IDraftyEntity
+        public class ImageEntity : IDraftyEntity
         {
             public string Type => "IM";
             public string Mime;
@@ -211,7 +249,7 @@ namespace Tinode.Client
             public string Name;
         }
 
-        private class AttachEntity : IDraftyEntity
+        public class BlobEntity : IDraftyEntity
         {
             public string Type => "EX";
             public string Mime;
@@ -221,24 +259,24 @@ namespace Tinode.Client
             public string Name;
         }
 
-        private class MentionEntity : IDraftyEntity
+        public class MentionEntity : IDraftyEntity
         {
             public string Type => "MN";
             public string Data;
         }
 
-        private class HashTagEntity : IDraftyEntity
+        public class HashTagEntity : IDraftyEntity
         {
             public string Type => "HT";
             public string Data;
         }
 
-        private interface IDraftyEntity
+        public interface IDraftyEntity
         {
             string Type { get; }
         }
 
-        private enum TextDecoration
+        public enum TextDecoration
         {
             None = 0,
             Strong = 1,

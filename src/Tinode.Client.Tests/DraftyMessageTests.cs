@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace Tinode.Client.Tests
@@ -112,8 +113,8 @@ namespace Tinode.Client.Tests
         {
             var msg = new DraftyMessage("text");
 
-            Assert.Throws<ArgumentException>(() => msg.AttachRef("url", ""));
-            Assert.Throws<ArgumentException>(() => msg.AttachRef("", "mime"));
+            Assert.Throws<ArgumentException>(() => msg.BlobRef("url", ""));
+            Assert.Throws<ArgumentException>(() => msg.BlobRef("", "mime"));
         }
 
         [Fact]
@@ -121,8 +122,8 @@ namespace Tinode.Client.Tests
         {
             var msg = new DraftyMessage("text");
 
-            Assert.Throws<ArgumentException>(() => msg.AttachBlob("blob", ""));
-            Assert.Throws<ArgumentException>(() => msg.AttachBlob("", "mime"));
+            Assert.Throws<ArgumentException>(() => msg.Blob("blob", ""));
+            Assert.Throws<ArgumentException>(() => msg.Blob("", "mime"));
         }
 
         [Fact]
@@ -139,6 +140,79 @@ namespace Tinode.Client.Tests
             var msg = new DraftyMessage("text");
 
             Assert.Throws<ArgumentException>(() => msg.Mention(""));
+        }
+
+
+        [Theory]
+        [MemberData(nameof(JsonSerializationSource))]
+        public void ToJson_ShouldComplete(DraftyMessage message, string expectedJson)
+        {
+            var json = message.ToJsonString();
+
+            Assert.Equal(expectedJson, json);
+        }
+
+        public static IEnumerable<object[]> JsonSerializationSource()
+        {
+            yield return new object[]
+            {
+                DraftyMessage.Create("text").Mention("me"),
+                "{\"txt\":\"textme\",\"fmt\":[{\"at\":4,\"len\":2,\"key\":0}],\"ent\":[{\"tp\":\"MN\",\"data\":{\"val\":\"me\"}}]}"
+            };
+
+            yield return new object[]
+            {
+                DraftyMessage
+                    .Create()
+                    .Code("piece of code"),
+                "{\"txt\":\"piece of code\",\"fmt\":[{\"at\":0,\"len\":13,\"tp\":\"CO\"}],\"ent\":[]}"
+            };
+
+            yield return new object[]
+            {
+                DraftyMessage
+                    .Create()
+                    .Emphasize("look at")
+                    .Text(" here ")
+                    .Link("google", "https://google.com")
+                    .Bold(8, 11),
+                "{\"txt\":\"look at here google\",\"fmt\":[{\"at\":0,\"len\":7,\"tp\":\"EM\"},{\"at\":13,\"len\":6,\"key\":0},{\"at\":8,\"len\":11,\"tp\":\"ST\"}],\"ent\":[{\"tp\":\"LN\",\"data\":{\"url\":\"https://google.com\"}}]}"
+            };
+
+            yield return new object[]
+            {
+                DraftyMessage.Create()
+                    .BlobRef("https://google.com", "text/html"),
+                "{\"txt\":\"\",\"fmt\":[{\"at\":-1,\"len\":0,\"key\":0}],\"ent\":[{\"tp\":\"EX\",\"data\":{\"mime\":\"text/html\",\"ref\":\"https://google.com\"}}]}"
+            };
+
+            yield return new object[]
+            {
+                DraftyMessage.Create()
+                    .BlobRef("https://google.com", "text/html", size: 300)
+                    .BlobRef("https://google.com", "text/html", name: "google page")
+                    .BlobRef("https://google.com", "text/html", name: "google page", size: 500),
+                "{\"txt\":\"\",\"fmt\":[{\"at\":-1,\"len\":0,\"key\":0},{\"at\":-1,\"len\":0,\"key\":1},{\"at\":-1,\"len\":0,\"key\":2}],\"ent\":[{\"tp\":\"EX\",\"data\":{\"mime\":\"text/html\",\"ref\":\"https://google.com\",\"size\":300}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/html\",\"ref\":\"https://google.com\",\"name\":\"google page\"}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/html\",\"ref\":\"https://google.com\",\"name\":\"google page\",\"size\":500}}]}"
+            };
+
+            yield return new object[]
+            {
+                DraftyMessage.Create()
+                    .Blob("Q3l0aG9uPT0wPT00LjAuMAo=", "text/plain", size: 300)
+                    .Blob("Q3l0aG9uPT0wPT00LjAuMAo=", "text/plain", name: "simple text")
+                    .Blob("Q3l0aG9uPT0wPT00LjAuMAo=", "text/plain", name: "simple text", size: 500),
+                "{\"txt\":\"\",\"fmt\":[{\"at\":-1,\"len\":0,\"key\":0},{\"at\":-1,\"len\":0,\"key\":1},{\"at\":-1,\"len\":0,\"key\":2}],\"ent\":[{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"size\":300}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"name\":\"simple text\"}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"name\":\"simple text\",\"size\":500}}]}"
+            };
+
+            yield return new object[]
+            {
+                DraftyMessage.Create()
+                    .ImageBlob("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 100, 200)
+                    .ImageBlob("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 140, 250, size: 300)
+                    .ImageBlob("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 200, 210, name: "simple text")
+                    .ImageBlob("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 200, 210, name: "simple text", size: 1000),
+                "{\"txt\":\"\",\"fmt\":[{\"at\":-1,\"len\":0,\"key\":0},{\"at\":-1,\"len\":0,\"key\":1},{\"at\":-1,\"len\":0,\"key\":2}],\"ent\":[{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"size\":300}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"name\":\"simple text\"}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"name\":\"simple text\",\"size\":500}}]}"
+            };
         }
     }
 }
