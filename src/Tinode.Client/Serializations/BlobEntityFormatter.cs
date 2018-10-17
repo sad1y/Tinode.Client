@@ -15,7 +15,7 @@ namespace Tinode.Client
                 JsonWriter.GetEncodedPropertyNameWithBeginObject("tp"),
                 JsonWriter.GetEncodedPropertyNameWithoutQuotation("EX"),
                 JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("data"),
-                JsonWriter.GetEncodedPropertyName("mime"),
+                JsonWriter.GetEncodedPropertyNameWithBeginObject("mime"),
                 JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("val"),
                 JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("ref"),
                 JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("name"),
@@ -34,8 +34,6 @@ namespace Tinode.Client
             // "data":
             UnsafeMemory64.WriteRaw8(ref writer, _stringByteKeys[2]);
             // {
-            writer.WriteBeginObject();
-
             // "mime":
             UnsafeMemory64.WriteRaw8(ref writer, _stringByteKeys[3]);
             writer.WriteString(imageEntity.Mime);

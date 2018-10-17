@@ -144,33 +144,34 @@ namespace Tinode.Client
             return this;
         }
 
-        public DraftyMessage ImageLink(string url, string mime, int width, int height, string name = null, int size = -1)
+        public DraftyMessage ImageRef(string url, string mime, int width, int height, string name = null, int size = -1)
         {
             if (string.IsNullOrEmpty(url)) throw new ArgumentException("Value cannot be null or empty.", nameof(url));
             if (string.IsNullOrEmpty(mime)) throw new ArgumentException("Value cannot be null or empty.", nameof(mime));
             if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
             if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
 
-            if (_sb.Length == 0)
-                _sb.Append(" ");
-
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = 1, Decoration = TextDecoration.None});
             _entities.Add(new ImageEntity {Ref = url, Mime = mime, Width = width, Height = height, Name = name, Size = size});
+
+            _sb.Append(" ");
+
             return this;
         }
 
-        public DraftyMessage ImageBlob(string data, string mime, int width, int height, string name = null, int size = -1)
+        public DraftyMessage Image(string data, string mime, int width, int height, string name = null, int size = -1)
         {
             if (string.IsNullOrEmpty(data)) throw new ArgumentException("Value cannot be null or empty.", nameof(data));
             if (string.IsNullOrEmpty(mime)) throw new ArgumentException("Value cannot be null or empty.", nameof(mime));
             if (width < 1) throw new ArgumentOutOfRangeException(nameof(width));
             if (height < 1) throw new ArgumentOutOfRangeException(nameof(height));
 
-            if (_sb.Length == 0)
-                _sb.Append(" ");
 
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = 1, Decoration = TextDecoration.None});
             _entities.Add(new ImageEntity {Val = data, Mime = mime, Width = width, Height = height, Name = name, Size = size});
+
+            _sb.Append(" ");
+
             return this;
         }
 
@@ -181,6 +182,7 @@ namespace Tinode.Client
 
             _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = -1, Len = 0, Decoration = TextDecoration.None});
             _entities.Add(new BlobEntity {Ref = url, Mime = mime, Name = name, Size = size});
+
             return this;
         }
 

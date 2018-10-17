@@ -77,8 +77,8 @@ namespace Tinode.Client.Tests
         {
             var msg = new DraftyMessage("text");
 
-            Assert.Throws<ArgumentException>(() => msg.ImageLink("", "mime", 300, 300));
-            Assert.Throws<ArgumentException>(() => msg.ImageLink("url", "", 300, 300));
+            Assert.Throws<ArgumentException>(() => msg.ImageRef("", "mime", 300, 300));
+            Assert.Throws<ArgumentException>(() => msg.ImageRef("url", "", 300, 300));
         }
 
         [Fact]
@@ -86,8 +86,8 @@ namespace Tinode.Client.Tests
         {
             var msg = new DraftyMessage("text");
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => msg.ImageLink("url", "mime", 1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => msg.ImageLink("url", "mime", 0, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => msg.ImageRef("url", "mime", 1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => msg.ImageRef("url", "mime", 0, 1));
         }
 
         [Fact]
@@ -95,8 +95,8 @@ namespace Tinode.Client.Tests
         {
             var msg = new DraftyMessage("text");
 
-            Assert.Throws<ArgumentException>(() => msg.ImageBlob("", "mime", 300, 300));
-            Assert.Throws<ArgumentException>(() => msg.ImageBlob("url", "", 300, 300));
+            Assert.Throws<ArgumentException>(() => msg.Image("", "mime", 300, 300));
+            Assert.Throws<ArgumentException>(() => msg.Image("url", "", 300, 300));
         }
 
         [Fact]
@@ -104,8 +104,8 @@ namespace Tinode.Client.Tests
         {
             var msg = new DraftyMessage("text");
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => msg.ImageBlob("url", "mime", 1, 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => msg.ImageBlob("url", "mime", 0, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => msg.Image("url", "mime", 1, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => msg.Image("url", "mime", 0, 1));
         }
 
         [Fact]
@@ -176,7 +176,9 @@ namespace Tinode.Client.Tests
                     .Text(" here ")
                     .Link("google", "https://google.com")
                     .Bold(8, 11),
-                "{\"txt\":\"look at here google\",\"fmt\":[{\"at\":0,\"len\":7,\"tp\":\"EM\"},{\"at\":13,\"len\":6,\"key\":0},{\"at\":8,\"len\":11,\"tp\":\"ST\"}],\"ent\":[{\"tp\":\"LN\",\"data\":{\"url\":\"https://google.com\"}}]}"
+                "{\"txt\":\"look at here google\"," +
+                "\"fmt\":[{\"at\":0,\"len\":7,\"tp\":\"EM\"},{\"at\":13,\"len\":6,\"key\":0},{\"at\":8,\"len\":11,\"tp\":\"ST\"}]," +
+                "\"ent\":[{\"tp\":\"LN\",\"data\":{\"url\":\"https://google.com\"}}]}"
             };
 
             yield return new object[]
@@ -192,7 +194,15 @@ namespace Tinode.Client.Tests
                     .BlobRef("https://google.com", "text/html", size: 300)
                     .BlobRef("https://google.com", "text/html", name: "google page")
                     .BlobRef("https://google.com", "text/html", name: "google page", size: 500),
-                "{\"txt\":\"\",\"fmt\":[{\"at\":-1,\"len\":0,\"key\":0},{\"at\":-1,\"len\":0,\"key\":1},{\"at\":-1,\"len\":0,\"key\":2}],\"ent\":[{\"tp\":\"EX\",\"data\":{\"mime\":\"text/html\",\"ref\":\"https://google.com\",\"size\":300}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/html\",\"ref\":\"https://google.com\",\"name\":\"google page\"}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/html\",\"ref\":\"https://google.com\",\"name\":\"google page\",\"size\":500}}]}"
+                "{\"txt\":\"\"," +
+                "\"fmt\":[" +
+                "{\"at\":-1,\"len\":0,\"key\":0}," +
+                "{\"at\":-1,\"len\":0,\"key\":1}," +
+                "{\"at\":-1,\"len\":0,\"key\":2}]," +
+                "\"ent\":[" +
+                "{\"tp\":\"EX\",\"data\":{\"mime\":\"text/html\",\"ref\":\"https://google.com\",\"size\":300}}," +
+                "{\"tp\":\"EX\",\"data\":{\"mime\":\"text/html\",\"ref\":\"https://google.com\",\"name\":\"google page\"}}," +
+                "{\"tp\":\"EX\",\"data\":{\"mime\":\"text/html\",\"ref\":\"https://google.com\",\"name\":\"google page\",\"size\":500}}]}"
             };
 
             yield return new object[]
@@ -201,17 +211,47 @@ namespace Tinode.Client.Tests
                     .Blob("Q3l0aG9uPT0wPT00LjAuMAo=", "text/plain", size: 300)
                     .Blob("Q3l0aG9uPT0wPT00LjAuMAo=", "text/plain", name: "simple text")
                     .Blob("Q3l0aG9uPT0wPT00LjAuMAo=", "text/plain", name: "simple text", size: 500),
-                "{\"txt\":\"\",\"fmt\":[{\"at\":-1,\"len\":0,\"key\":0},{\"at\":-1,\"len\":0,\"key\":1},{\"at\":-1,\"len\":0,\"key\":2}],\"ent\":[{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"size\":300}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"name\":\"simple text\"}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"name\":\"simple text\",\"size\":500}}]}"
+                "{\"txt\":\"\"," +
+                "\"fmt\":[" +
+                "{\"at\":-1,\"len\":0,\"key\":0}," +
+                "{\"at\":-1,\"len\":0,\"key\":1}," +
+                "{\"at\":-1,\"len\":0,\"key\":2}]," +
+                "\"ent\":[" +
+                "{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"size\":300}}," +
+                "{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"name\":\"simple text\"}}," +
+                "{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"name\":\"simple text\",\"size\":500}}]}"
             };
 
             yield return new object[]
             {
                 DraftyMessage.Create()
-                    .ImageBlob("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 100, 200)
-                    .ImageBlob("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 140, 250, size: 300)
-                    .ImageBlob("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 200, 210, name: "simple text")
-                    .ImageBlob("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 200, 210, name: "simple text", size: 1000),
-                "{\"txt\":\"\",\"fmt\":[{\"at\":-1,\"len\":0,\"key\":0},{\"at\":-1,\"len\":0,\"key\":1},{\"at\":-1,\"len\":0,\"key\":2}],\"ent\":[{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"size\":300}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"name\":\"simple text\"}},{\"tp\":\"EX\",\"data\":{\"mime\":\"text/plain\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"name\":\"simple text\",\"size\":500}}]}"
+                    .Image("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 100, 200)
+                    .Image("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 140, 250, size: 300)
+                    .Image("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 200, 210, name: "simple image")
+                    .Image("Q3l0aG9uPT0wPT00LjAuMAo=", "image/jpeg", 200, 210, name: "simple image", size: 1000),
+                "{\"txt\":\"    \"," +
+                "\"fmt\":[{\"at\":0,\"len\":1,\"key\":0},{\"at\":1,\"len\":1,\"key\":1},{\"at\":2,\"len\":1,\"key\":2},{\"at\":3,\"len\":1,\"key\":3}]," +
+                "\"ent\":[" +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/jpeg\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"width\":100,\"height\":200}}," +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/jpeg\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"width\":140,\"height\":250,\"size\":300}}," +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/jpeg\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"width\":200,\"height\":210,\"name\":\"simple image\"}}," +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/jpeg\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"width\":200,\"height\":210,\"name\":\"simple image\",\"size\":1000}}]}"
+            };
+            
+            yield return new object[]
+            {
+                DraftyMessage.Create()
+                    .ImageRef("https://i.imgur.com/RHq0ix3.gif", "image/gif", 100, 200)
+                    .ImageRef("https://i.imgur.com/RHq0ix3.gif", "image/gif", 140, 250, size: 300)
+                    .ImageRef("https://i.imgur.com/RHq0ix3.gif", "image/gif", 200, 210, name: "simple image")
+                    .ImageRef("https://i.imgur.com/RHq0ix3.gif", "image/gif", 200, 210, name: "simple image", size: 1000),
+                "{\"txt\":\"    \"," +
+                "\"fmt\":[{\"at\":0,\"len\":1,\"key\":0},{\"at\":1,\"len\":1,\"key\":1},{\"at\":2,\"len\":1,\"key\":2},{\"at\":3,\"len\":1,\"key\":3}]," +
+                "\"ent\":[" +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/gif\",\"ref\":\"https://i.imgur.com/RHq0ix3.gif\",\"width\":100,\"height\":200}}," +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/gif\",\"ref\":\"https://i.imgur.com/RHq0ix3.gif\",\"width\":140,\"height\":250,\"size\":300}}," +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/gif\",\"ref\":\"https://i.imgur.com/RHq0ix3.gif\",\"width\":200,\"height\":210,\"name\":\"simple image\"}}," +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/gif\",\"ref\":\"https://i.imgur.com/RHq0ix3.gif\",\"width\":200,\"height\":210,\"name\":\"simple image\",\"size\":1000}}]}"
             };
         }
     }
