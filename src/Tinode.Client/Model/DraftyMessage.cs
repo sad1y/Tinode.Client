@@ -1,10 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using System.Text;
+using Google.Protobuf;
+using Tinode.Client.Extensions;
 using Utf8Json;
-using Utf8Json.Internal;
 using Utf8Json.Resolvers;
 
 namespace Tinode.Client
@@ -233,6 +232,8 @@ namespace Tinode.Client
         }
 
         public byte[] ToJsonBytes() => JsonSerializer.Serialize(this, JsonFormatter);
+
+        public ByteString ToByteString() => ToJsonBytes().ToByteString();
 
         public string ToJsonString() => Encoding.UTF8.GetString(ToJsonBytes());
 

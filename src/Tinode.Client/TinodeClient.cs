@@ -25,8 +25,7 @@ namespace Tinode.Client
         private readonly ConcurrentBag<string> _topicSubscribtions = new ConcurrentBag<string>();
         private readonly object _sync = new object();
         private AsyncDuplexStreamingCall<ClientMsg, ServerMsg> _loop;
-        private bool _isSubscribedToMe;
-
+        private bool _isSubscribedToMe = false;
 
         public event Action<ServerMsg> OnServerResponse;
 
@@ -212,13 +211,13 @@ namespace Tinode.Client
                     Id = GenerateMessageId(),
                     Topic = topic,
                     Head = { },
-                    Content = null // message.AsByteString()
+                    Content = msg.ToByteString()
                 }
             };
 
             var rcvMsg = await SendMessageAsync(message, message.Sub.Id);
 
-            // return new CreateTopicResponse(topicId);
+            // return new CreateTopicResponse(message.Sub.Id);
         }
 
         public async Task<CreateTopicResponse> CreatePerToPerTopicAsync(string user, string[] tags = null)
