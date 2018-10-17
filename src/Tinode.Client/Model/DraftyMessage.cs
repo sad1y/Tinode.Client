@@ -197,12 +197,18 @@ namespace Tinode.Client
             return this;
         }
 
-        public DraftyMessage Mention(string text)
+        public DraftyMessage Mention(string text, string userId)
         {
-            if (string.IsNullOrEmpty(text)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(text));
+            if (string.IsNullOrEmpty(text)) throw new ArgumentException("Value cannot be null or empty.", nameof(text));
+            if (string.IsNullOrEmpty(userId)) throw new ArgumentException("Value cannot be null or empty.", nameof(userId));
 
-            _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = text.Length, Decoration = TextDecoration.None});
-            _entities.Add(new MentionEntity {Data = text});
+            _inlineFormat.Add(new InlineFormat
+                {Key = _entities.Count, At = _sb.Length, Len = text[0] == '@' ? text.Length : text.Length + 1, Decoration = TextDecoration.None});
+
+            _entities.Add(new MentionEntity {Data = userId});
+
+            if (text[0] != '@')
+                _sb.Append('@');
 
             _sb.Append(text);
 
@@ -213,10 +219,15 @@ namespace Tinode.Client
         {
             if (string.IsNullOrEmpty(text)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(text));
 
-            _inlineFormat.Add(new InlineFormat {Key = _entities.Count, At = _sb.Length, Len = text.Length, Decoration = TextDecoration.None});
-            _entities.Add(new HashTagEntity {Data = text});
+            var value = text[0] == '#' ? text.AsSpan().Slice(1).ToString() : text;
 
-            _sb.Append(text);
+            _inlineFormat.Add(new InlineFormat
+                {Key = _entities.Count, At = _sb.Length, Len = value.Length + 1, Decoration = TextDecoration.None});
+
+            _entities.Add(new HashTagEntity {Data = value});
+
+            _sb.Append('#');
+            _sb.Append(value);
 
             return this;
         }

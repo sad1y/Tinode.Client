@@ -139,9 +139,16 @@ namespace Tinode.Client.Tests
         {
             var msg = new DraftyMessage("text");
 
-            Assert.Throws<ArgumentException>(() => msg.Mention(""));
+            Assert.Throws<ArgumentException>(() => msg.Mention("", "usr1235"));
         }
 
+        [Fact]
+        public void Mention_ThrowException_IfUserIdIsEmpty()
+        {
+            var msg = new DraftyMessage("text");
+
+            Assert.Throws<ArgumentException>(() => msg.Mention("Mike", ""));
+        }
 
         [Theory]
         [MemberData(nameof(JsonSerializationSource))]
@@ -156,16 +163,22 @@ namespace Tinode.Client.Tests
         {
             yield return new object[]
             {
-                DraftyMessage.Create("text").Mention("me"),
-                "{\"txt\":\"textme\",\"fmt\":[{\"at\":4,\"len\":2,\"key\":0}],\"ent\":[{\"tp\":\"MN\",\"data\":{\"val\":\"me\"}}]}"
+                DraftyMessage
+                    .Create()
+                    .Code("piece of code"),
+                "{\"txt\":\"piece of code\",\"fmt\":[{\"at\":0,\"len\":13,\"tp\":\"CO\"}],\"ent\":[]}"
             };
 
             yield return new object[]
             {
                 DraftyMessage
                     .Create()
-                    .Code("piece of code"),
-                "{\"txt\":\"piece of code\",\"fmt\":[{\"at\":0,\"len\":13,\"tp\":\"CO\"}],\"ent\":[]}"
+                    .Deleted("deprecated.").NextLine().Bold("do not use it"),
+                "{\"txt\":\"deprecated.do not use it\"," +
+                "\"fmt\":[" +
+                "{\"at\":0,\"len\":11,\"tp\":\"DL\"}," +
+                "{\"at\":11,\"len\":1,\"tp\":\"BR\"}," +
+                "{\"at\":11,\"len\":13,\"tp\":\"ST\"}],\"ent\":[]}"
             };
 
             yield return new object[]
@@ -237,7 +250,7 @@ namespace Tinode.Client.Tests
                 "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/jpeg\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"width\":200,\"height\":210,\"name\":\"simple image\"}}," +
                 "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/jpeg\",\"val\":\"Q3l0aG9uPT0wPT00LjAuMAo=\",\"width\":200,\"height\":210,\"name\":\"simple image\",\"size\":1000}}]}"
             };
-            
+
             yield return new object[]
             {
                 DraftyMessage.Create()
@@ -252,6 +265,42 @@ namespace Tinode.Client.Tests
                 "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/gif\",\"ref\":\"https://i.imgur.com/RHq0ix3.gif\",\"width\":140,\"height\":250,\"size\":300}}," +
                 "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/gif\",\"ref\":\"https://i.imgur.com/RHq0ix3.gif\",\"width\":200,\"height\":210,\"name\":\"simple image\"}}," +
                 "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/gif\",\"ref\":\"https://i.imgur.com/RHq0ix3.gif\",\"width\":200,\"height\":210,\"name\":\"simple image\",\"size\":1000}}]}"
+            };
+
+            yield return new object[]
+            {
+                DraftyMessage.Create()
+                    .ImageRef("https://i.imgur.com/RHq0ix3.gif", "image/gif", 100, 200)
+                    .ImageRef("https://i.imgur.com/RHq0ix3.gif", "image/gif", 140, 250, size: 300)
+                    .ImageRef("https://i.imgur.com/RHq0ix3.gif", "image/gif", 200, 210, name: "simple image")
+                    .ImageRef("https://i.imgur.com/RHq0ix3.gif", "image/gif", 200, 210, name: "simple image", size: 1000),
+                "{\"txt\":\"    \"," +
+                "\"fmt\":[{\"at\":0,\"len\":1,\"key\":0},{\"at\":1,\"len\":1,\"key\":1},{\"at\":2,\"len\":1,\"key\":2},{\"at\":3,\"len\":1,\"key\":3}]," +
+                "\"ent\":[" +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/gif\",\"ref\":\"https://i.imgur.com/RHq0ix3.gif\",\"width\":100,\"height\":200}}," +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/gif\",\"ref\":\"https://i.imgur.com/RHq0ix3.gif\",\"width\":140,\"height\":250,\"size\":300}}," +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/gif\",\"ref\":\"https://i.imgur.com/RHq0ix3.gif\",\"width\":200,\"height\":210,\"name\":\"simple image\"}}," +
+                "{\"tp\":\"IM\",\"data\":{\"mime\":\"image/gif\",\"ref\":\"https://i.imgur.com/RHq0ix3.gif\",\"width\":200,\"height\":210,\"name\":\"simple image\",\"size\":1000}}]}"
+            };
+
+            yield return new object[]
+            {
+                DraftyMessage.Create("ask ").Mention("John", "usrJan310").Text(" or ").Mention("@Sarah", "usrIm13mUO"),
+                "{\"txt\":\"ask @John or @Sarah\"," +
+                "\"fmt\":[{\"at\":4,\"len\":5,\"key\":0},{\"at\":13,\"len\":6,\"key\":1}]," +
+                "\"ent\":[" +
+                "{\"tp\":\"MN\",\"data\":{\"val\":\"usrJan310\"}}," +
+                "{\"tp\":\"MN\",\"data\":{\"val\":\"usrIm13mUO\"}}]}"
+            };
+
+            yield return new object[]
+            {
+                DraftyMessage.Create("brand new dotnet ").Hashtag("#dotnet").Hashtag("dotnetcore"),
+                "{\"txt\":\"brand new dotnet #dotnet#dotnetcore\"," +
+                "\"fmt\":[{\"at\":17,\"len\":7,\"key\":0},{\"at\":24,\"len\":11,\"key\":1}]," +
+                "\"ent\":[" +
+                "{\"tp\":\"HT\",\"data\":{\"val\":\"dotnet\"}}," +
+                "{\"tp\":\"HT\",\"data\":{\"val\":\"dotnetcore\"}}]}"
             };
         }
     }

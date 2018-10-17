@@ -13,9 +13,9 @@ namespace Tinode.Client
             _stringByteKeys = new[]
             {
                 JsonWriter.GetEncodedPropertyNameWithBeginObject("tp"),
-                JsonWriter.GetEncodedPropertyName("HT"),
+                JsonWriter.GetEncodedPropertyNameWithoutQuotation("HT"),
                 JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("data"),
-                JsonWriter.GetEncodedPropertyNameWithPrefixValueSeparator("val")
+                JsonWriter.GetEncodedPropertyNameWithBeginObject("val")
             };
         }
 
@@ -23,18 +23,19 @@ namespace Tinode.Client
         {
             // {"tp":
             UnsafeMemory64.WriteRaw6(ref writer, _stringByteKeys[0]);
-            UnsafeMemory64.WriteRaw4(ref writer, _stringByteKeys[1]);
+            writer.WriteQuotation();
+            UnsafeMemory64.WriteRaw2(ref writer, _stringByteKeys[1]);
+            writer.WriteQuotation();
 
             // "data":
             UnsafeMemory64.WriteRaw8(ref writer, _stringByteKeys[2]);
             // {
-            writer.WriteBeginObject();
-
             // "val":
-            UnsafeMemory64.WriteRaw6(ref writer, _stringByteKeys[3]);
+            UnsafeMemory64.WriteRaw7(ref writer, _stringByteKeys[3]);
             writer.WriteString(value.Data);
 
             // }
+            writer.WriteEndObject();
             writer.WriteEndObject();
         }
 
