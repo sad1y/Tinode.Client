@@ -67,7 +67,7 @@ namespace Tinode.Client
                 {
                     while (!token.IsCancellationRequested)
                     {
-                        var hasNewMsg = await _loop.ResponseStream.MoveNext(CancellationToken.None);
+                        var hasNewMsg = await _loop.ResponseStream.MoveNext(_cts.Token);
                         if (!hasNewMsg) break;
 
                         var msg = _loop.ResponseStream.Current;
